@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+ apache:
+  image: httpd:2.4.52
+  container_name: test
+  ports: ["80:80"]
+  volumes:
+    - '.:/usr/local/apache2/htdocs'
