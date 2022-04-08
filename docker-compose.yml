@@ -1,9 +1,52 @@
 version: '3'
 
 services:
- apache:
-  image: httpd:2.4.52
-  container_name: test
-  ports: ["80:80"]
-  volumes:
-    - '.:/usr/local/apache2/htdocs'
+ website:
+    build: .
+    # image: php:7.4-apache
+    # volumes:
+    #   - "./src:/var/www/html"
+    volumes:
+      - ".:/var/www"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`${BASE_URL}`)"
+      - "traefik.http.services.web.loadbalancer.server.port=80"
+    env_file:
+      - ".env"
+
+
+ database:
+    # image: mariadb
+    # volumes:
+    #   - "./my/own/datadir:/var/lib/mysql"
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      # MARIADB_ROOT_PASSWORD: ${DB_PASSWORD_ROOT}
+      # MARIADB_DATABASE: ${DB_DATABASE}
+      # MARIADB_USER: ${DB_USERNAME}
+      # MARIADB_PASSWORD: ${DB_PASSWORD}
+
+ phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - database
+    environment:
+      PMA_ARBITRARY: 1
+    restart: always
+    labels:
+      - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.site.localhost`)"
+      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+
+ traefik:
+    image: "traefik:v2.6"
+    container_name: "traefik"
+    command: --api.insecure=true --providers.docker
+
+    ports:
+       - "80:80"
+       - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
